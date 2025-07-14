@@ -12,20 +12,23 @@ import software.amazon.awssdk.services.ssm.model.GetParametersByPathRequest;
 
 @Configuration
 public class AwsSsmConfig {
-	
-	@FunctionalInterface
-	public interface SsmClientProvider {
-	    SsmClient getClient();
-	}
+
+    @FunctionalInterface
+    public interface SsmClientProvider {
+        SsmClient getClient();
+    }
 
     @Bean
     SsmClientProvider ssmClientProvider() {
         return SsmClient::create;
     }
-    
+
     public interface ParameterRetriever {
         String getParameter(String parameterName);
-        Map<String, String> getParametersByPath(String path, boolean recursive);
+
+        Map<String, String> getParametersByPathRecursive(String path);
+
+        Map<String, String> getParametersByPathNonRecursive(String path);
     }
 
     @Bean("awsParameterRetriever")
@@ -43,7 +46,16 @@ public class AwsSsmConfig {
             }
 
             @Override
-            public Map<String, String> getParametersByPath(String path, boolean recursive) {
+            public Map<String, String> getParametersByPathRecursive(String path) {
+                return fetchParametersByPath(path, true);
+            }
+
+            @Override
+            public Map<String, String> getParametersByPathNonRecursive(String path) {
+                return fetchParametersByPath(path, false);
+            }
+
+            private Map<String, String> fetchParametersByPath(String path, boolean recursive) {
                 var ssmClient = ssmClientProvider.getClient();
                 Map<String, String> parameters = new HashMap<>();
                 String nextToken = null;
@@ -57,15 +69,12 @@ public class AwsSsmConfig {
                             .build();
 
                     var response = ssmClient.getParametersByPath(request);
-
                     response.parameters().forEach(param -> parameters.put(param.name(), param.value()));
                     nextToken = response.nextToken();
-
                 } while (nextToken != null);
 
                 return parameters;
             }
         };
     }
-
 }
