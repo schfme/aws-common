@@ -1,37 +1,43 @@
 package me.schf.aws.common.config.sns;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import jakarta.annotation.PreDestroy;
+import me.schf.aws.common.config.client.RemoteClientProvider;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 @Configuration
 public class AwsSnsConfig {
-
-    @FunctionalInterface
-    public interface SnsClientProvider {
-        SnsClient getClient();
-    }
-
-    @Bean
-    SnsClientProvider snsClientProvider() {
-        return SnsClient::create;
-    }
-
-    public interface TextSender {
-        void sendText(String phoneNumber, String message);
-    }
+	
+    private SnsClient snsClient;
+	
+	@Bean("snsClientProvider")
+	RemoteClientProvider<SnsClient> snsClientProvider() {
+        this.snsClient = SnsClient.create();
+        return () -> snsClient;
+	}
 
     @Bean
-    TextSender awsTextSender(SnsClientProvider snsClientProvider) {
+	TextSender awsTextSender(@Qualifier("snsClientProvider") RemoteClientProvider<SnsClient> snsClientProvider) {
         return (phoneNumber, message) -> {
-            var client = snsClientProvider.getClient();
-            var request = PublishRequest.builder()
+            SnsClient sns = snsClientProvider.getClient();
+
+            PublishRequest request = PublishRequest.builder()
                     .phoneNumber(phoneNumber)
                     .message(message)
                     .build();
-            client.publish(request);
+
+            sns.publish(request);
         };
+    }
+    
+    @PreDestroy
+    public void shutdownSnsClient() {
+        if (snsClient != null) {
+            snsClient.close();
+        }
     }
 }
