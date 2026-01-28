@@ -32,7 +32,7 @@ public class AwsS3Config {
 		return (s3RemoteFile, contents) -> {
 			var s3 = s3ClientProvider.getClient();
 			String bucket = s3RemoteFile.getBucket();
-			String key = s3RemoteFile.getBucket();
+			String key = s3RemoteFile.getKey();
 
 			var request = PutObjectRequest.builder()
 					.bucket(bucket)

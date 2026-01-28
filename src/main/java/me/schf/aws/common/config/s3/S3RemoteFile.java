@@ -2,8 +2,12 @@ package me.schf.aws.common.config.s3;
 
 public class S3RemoteFile implements RemoteFile {
 
-	private final String bucket;
-	private final String key;
+	private String bucket;
+	private String key;
+
+	public S3RemoteFile() {
+		super();
+	}
 
 	public S3RemoteFile(String bucket, String key) {
 		super();
@@ -22,6 +26,14 @@ public class S3RemoteFile implements RemoteFile {
 
 	public String getKey() {
 		return key;
+	}
+
+	public void setBucket(String bucket) {
+		this.bucket = bucket;
+	}
+
+	public void setKey(String key) {
+		this.key = key;
 	}
 
 }
